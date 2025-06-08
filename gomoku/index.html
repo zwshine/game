@@ -7,31 +7,47 @@
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
-    <div class="game-container">
-        <h1>五子棋</h1>
-        <div id="board-container">
-            <canvas id="chessboard" width="640" height="640"></canvas>
-        </div>
-        <div id="game-info">
-            <p>当前走子: <span id="current-player">黑子</span></p>
-            <p id="status-message"></p>
-        </div>
-        <div class="controls">
-            <button id="reset-button">重新开始</button>
-            <button id="undo-button">悔棋</button>
-            <button id="ai-button">人机对战</button>
-            <button id="online-button">联机对战</button>
-            <a href="../index.html" class="back-button">返回菜单</a>
-        </div>
-        <div id="online-controls" style="display: none;">
-            <div class="room-controls">
-                <input type="text" id="room-id" placeholder="输入房间ID">
-                <button id="create-room" disabled>创建房间</button>
-                <button id="join-room" disabled>加入房间</button>
+    <div class="container">
+        <!-- 模式选择视图 -->
+        <div id="mode-selection-view">
+            <h1>五子棋</h1>
+            <div class="mode-options">
+                <button class="mode-button" data-mode="pve">人机对战</button>
+                <button class="mode-button" data-mode="pvp">双人对战</button>
+                <button class="mode-button" data-mode="online">在线联机</button>
             </div>
-            <div id="room-info"></div>
+            <div id="online-options" class="hidden">
+                <input type="text" id="room-id" placeholder="输入房间ID">
+                <button id="create-room-btn">创建房间</button>
+                <button id="join-room-btn">加入房间</button>
+                <p id="online-status"></p>
+            </div>
+            <a href="../index.html" class="back-to-home">返回主页</a>
+        </div>
+
+        <!-- 游戏视图 -->
+        <div id="game-view" class="hidden">
+            <div class="game-header">
+                <span id="game-title">五子棋</span>
+                <div class="game-controls">
+                    <button id="fullscreen-btn">全屏</button>
+                    <button id="back-btn">返回</button>
+                </div>
+            </div>
+            <div id="board-container">
+                <canvas id="chessboard" width="640" height="640"></canvas>
+            </div>
+            <div id="game-info">
+                <p>轮到: <span id="current-player"></span></p>
+                <p id="status-message"></p>
+            </div>
+            <div class="ingame-controls">
+                <button id="reset-button">重开</button>
+                <button id="undo-button">悔棋</button>
+            </div>
         </div>
     </div>
+    
     <script src="https://unpkg.com/peerjs@1.4.7/dist/peerjs.min.js"></script>
     <script src="script.js"></script>
 </body>
