@@ -354,7 +354,16 @@ document.addEventListener('DOMContentLoaded', () => {
                 case 'move':
                     executeMove(data.move);
                     break;
-                // Add cases for undo/reset if needed
+                case 'reset_request':
+                    if (confirm('对手请求重新开始，是否同意?')) {
+                        conn.send({ type: 'reset_accept' });
+                        initGame();
+                    }
+                    break;
+                case 'reset_accept':
+                    initGame();
+                    statusMessageP.textContent = '对手同意了重开游戏.';
+                    break;
             }
         });
         conn.on('close', () => { 
@@ -377,7 +386,14 @@ document.addEventListener('DOMContentLoaded', () => {
     window.addEventListener('resize', resizeCanvas);
     
     resetButton.addEventListener('click', initGame);
-    undoButton.addEventListener('click', undoMove);
+    undoButton.addEventListener('click', () => {
+        if (gameMode === 'online') {
+            statusMessageP.textContent = '联机模式不支持悔棋。';
+            setTimeout(() => { if (statusMessageP.textContent === '联机模式不支持悔棋。') statusMessageP.textContent = ''; }, 2000);
+        } else {
+            undoMove();
+        }
+    });
     
     fullscreenBtn.addEventListener('click', () => {
         if (!document.fullscreenElement) {
