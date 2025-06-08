@@ -337,6 +337,7 @@ document.addEventListener('DOMContentLoaded', () => {
         
         lastMove = move;
         selectedPiece = null;
+        
         currentPlayer = currentPlayer === 'red' ? 'black' : 'red';
         
         updateGameInfo();
@@ -492,19 +493,22 @@ document.addEventListener('DOMContentLoaded', () => {
         const dx = Math.abs(toX - fromX);
         const dy = Math.abs(toY - fromY);
 
-        // Flying General rule
-        const opponentColor = currentPlayer === 'red' ? 'black' : 'red';
+        // Flying General rule check
+        const pieceColor = getPieceColor(board[fromY][fromX]);
+        const opponentColor = pieceColor === 'red' ? 'black' : 'red';
         const opponentGeneralPiece = opponentColor === 'red' ? 5 : 12;
-        const [kingX, kingY] = findPiece(opponentGeneralPiece);
-        if(kingX !== null && toX === kingX && countPiecesBetween(toX, toY, kingX, kingY) === 0){
-             return true;
-        }
+        const opponentKingPos = findPiece(opponentGeneralPiece);
 
+        if (opponentKingPos && toX === opponentKingPos.x && fromX === opponentKingPos.x) {
+            if (countPiecesBetween(fromX, fromY, opponentKingPos.x, opponentKingPos.y) === 0) {
+                return true;
+            }
+        }
+        
         if (!(dx + dy === 1)) return false;
         
         // Must stay in palace
         if (toX < 3 || toX > 5) return false;
-        const pieceColor = getPieceColor(board[fromY][fromX]);
         if (pieceColor === 'red' && (toY < 7 || toY > 9)) return false;
         if (pieceColor === 'black' && (toY < 0 || toY > 2)) return false;
 
