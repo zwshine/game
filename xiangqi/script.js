@@ -742,7 +742,7 @@ document.addEventListener('DOMContentLoaded', () => {
         peer.on('connection', (c) => { 
             conn = c; 
             roomInfo.textContent = '有玩家正在连接...';
-            setupConnectionEvents(); 
+            setupConnectionEvents(false);
         });
         peer.on('error', (err) => { 
             console.error('PeerJS error:', err); 
@@ -762,17 +762,19 @@ document.addEventListener('DOMContentLoaded', () => {
         
         roomInfo.textContent = `正在连接到 ${remoteId}...`;
         conn = peer.connect(remoteId, { reliable: true });
-        setupConnectionEvents();
+        setupConnectionEvents(true);
     }
 
-    function setupConnectionEvents() {
+    function setupConnectionEvents(isJoiner) {
         if (!conn) return;
         conn.on('open', () => {
-            playerColor = 'black'; // Joiner is black
-            initBoard(); // init board for joiner. currentPlayer will be 'red'
-            roomInfo.textContent = `连接成功! 您是黑方. 等待房主同步棋盘...`;
-            // Request full sync from host
-            conn.send({type: 'sync_request'});
+            if (isJoiner) {
+                playerColor = 'black'; // Joiner is black
+                initBoard(); // init board for joiner. currentPlayer will be 'red'
+                roomInfo.textContent = `连接成功! 您是黑方. 等待房主同步棋盘...`;
+                // Request full sync from host
+                conn.send({type: 'sync_request'});
+            }
         });
         conn.on('data', (data) => {
             switch (data.type) {
