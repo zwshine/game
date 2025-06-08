@@ -742,7 +742,7 @@ document.addEventListener('DOMContentLoaded', () => {
         peer.on('connection', (c) => { 
             conn = c; 
             roomInfo.textContent = '有玩家正在连接...';
-            setupConnectionEvents(false);
+            setupConnectionEvents(); // This is the host, just set up data handlers
         });
         peer.on('error', (err) => { 
             console.error('PeerJS error:', err); 
@@ -762,20 +762,24 @@ document.addEventListener('DOMContentLoaded', () => {
         
         roomInfo.textContent = `正在连接到 ${remoteId}...`;
         conn = peer.connect(remoteId, { reliable: true });
-        setupConnectionEvents(true);
+
+        // Joiner-specific logic on connection open
+        conn.on('open', () => {
+            playerColor = 'black'; // Joiner is black
+            initBoard(); // init board for joiner. currentPlayer will be 'red'
+            roomInfo.textContent = `连接成功! 您是黑方. 等待房主同步棋盘...`;
+            // Request full sync from host
+            conn.send({type: 'sync_request'});
+        });
+        
+        setupConnectionEvents(); // Set up common data and close handlers
     }
 
-    function setupConnectionEvents(isJoiner) {
+    function setupConnectionEvents() {
         if (!conn) return;
-        conn.on('open', () => {
-            if (isJoiner) {
-                playerColor = 'black'; // Joiner is black
-                initBoard(); // init board for joiner. currentPlayer will be 'red'
-                roomInfo.textContent = `连接成功! 您是黑方. 等待房主同步棋盘...`;
-                // Request full sync from host
-                conn.send({type: 'sync_request'});
-            }
-        });
+
+        // Note: conn.on('open') is now handled specifically for the joiner in joinRoom()
+        
         conn.on('data', (data) => {
             switch (data.type) {
                 case 'sync_request':
