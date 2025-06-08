@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>IMEI 重构工具</title>
+    <link rel="stylesheet" href="../css/common.css">
+    <link rel="stylesheet" href="../css/imei.css">
+</head>
+<body>
+    <a href="../index.html" class="back-button">&larr; 返回</a>
+    <div class="main-container">
+        <h1>IMEI 重构工具</h1>
+        
+        <div class="tool-box">
+            <h2>IMEI 输入与分析</h2>
+            <div class="imei-section">
+                <div class="input-group">
+                    <label for="original-imei">原始IMEI:</label>
+                    <input type="text" id="original-imei" placeholder="输入15位IMEI" maxlength="15">
+                    <button class="primary" onclick="analyzeImei()">分析</button>
+                    <button onclick="clearAll()">清空</button>
+                </div>
+                <div id="original-status" class="status"></div>
+            </div>
+        </div>
+
+        <div class="tool-box">
+            <div class="modify-panel">
+                <h3>修改选项 <small>(默认修改FAC和SNR)</small></h3>
+                
+                <div class="modify-option">
+                    <label>
+                        <input type="checkbox" id="modify-tac"> TAC (设备型号)
+                    </label>
+                    <select id="tac-preset">
+                        <option value="random">随机TAC</option>
+                        <option value="35">Apple (35开头)</option>
+                        <option value="86">Samsung (86开头)</option>
+                        <option value="860">Huawei (860开头)</option>
+                        <option value="86">Xiaomi (86开头)</option>
+                    </select>
+                </div>
+                
+                <div class="modify-option">
+                    <label>
+                        <input type="checkbox" id="modify-fac" checked> FAC (产地代码)
+                    </label>
+                    <select id="fac-preset">
+                        <option value="random">随机FAC</option>
+                    </select>
+                </div>
+
+                <div class="modify-option">
+                    <label>
+                        <input type="checkbox" id="modify-snr" checked> SNR (序列号)
+                    </label>
+                    <input type="text" id="snr-input" placeholder="随机SNR (可留空)">
+                </div>
+
+                <button class="primary" onclick="modifyAndGenerate()">生成新IMEI</button>
+            </div>
+            
+            <div class="results">
+                <h3>生成结果:</h3>
+                <div id="new-imei-list"></div>
+            </div>
+        </div>
+        
+        <!-- ... 原有的捐赠模块 ... -->
+        <div id="donate-fixed-box">
+            <img src="https://www.aircloud.wiki/images/wechat-pay.jpg" alt="微信赞赏码">
+            <p class="donate-text">如果觉得这个工具有用，可以请我喝杯咖啡！</p>
+        </div>
+    </div>
+
+    <script>
+        // ... 原有的JavaScript逻辑不需要改变 ...
+    </script>
+    <script src="../js/imei-logic.js"></script>
+</body>
+</html>
