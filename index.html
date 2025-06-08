@@ -50,6 +50,18 @@
             box-shadow: 0 4px 12px rgba(0,0,0,0.1);
         }
 
+        #online-counter {
+            position: fixed;
+            top: 10px;
+            left: 10px;
+            background-color: rgba(0, 0, 0, 0.5);
+            color: white;
+            padding: 5px 10px;
+            border-radius: 5px;
+            font-size: 14px;
+            z-index: 1000;
+        }
+
         @media (max-width: 600px) {
             h1 {
                 font-size: 24px;
@@ -63,6 +75,7 @@
     </style>
 </head>
 <body>
+    <div id="online-counter">在线人数: 正在获取...</div>
     <div class="container">
         <h1>棋类游戏合集</h1>
         <div class="game-selection">
@@ -78,6 +91,34 @@
         } else {
             console.warn("当前浏览器不支持WebRTC，联机功能可能不可用");
         }
+
+        const onlineCounter = document.getElementById('online-counter');
+
+        function updateOnlineCount() {
+            // PeerJS服务器默认的REST API来获取所有活跃的peer ID
+            // 注意：这依赖于PeerJS服务器的公共API，如果服务器配置变更，此功能可能失效
+            fetch('https://0.peerjs.com/peerjs/peers')
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error('无法连接到PeerJS服务器');
+                    }
+                    return response.json();
+                })
+                .then(peers => {
+                    // 过滤掉非游戏房间的peer ID（如果可以区分的话）
+                    // 目前，我们只显示总连接数
+                    onlineCounter.textContent = `在线人数: ${peers.length}`;
+                })
+                .catch(error => {
+                    console.error('获取在线人数失败:', error);
+                    onlineCounter.textContent = '在线人数: 获取失败';
+                });
+        }
+
+        // 页面加载时立即更新一次，之后每15秒更新一次
+        updateOnlineCount();
+        setInterval(updateOnlineCount, 15000);
+
     </script>
 </body>
 </html> 

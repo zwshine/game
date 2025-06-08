@@ -41,16 +41,29 @@ document.addEventListener('DOMContentLoaded', () => {
     let conn = null;
     let playerColor = 1; // 1 for host (black), 2 for joiner (white)
 
+    let inactivityTimer = null;
+
     // --- View Management ---
     function showGameView() {
         modeSelectionView.classList.add('hidden');
         gameView.classList.remove('hidden');
         resizeCanvas();
+        resetInactivityTimer();
+        window.addEventListener('mousemove', resetInactivityTimer);
+        window.addEventListener('keydown', resetInactivityTimer);
     }
 
     function showModeSelectionView() {
         gameView.classList.add('hidden');
         modeSelectionView.classList.remove('hidden');
+
+        // Stop inactivity timer
+        if (inactivityTimer) {
+            clearTimeout(inactivityTimer);
+            inactivityTimer = null;
+        }
+        window.removeEventListener('mousemove', resetInactivityTimer);
+        window.removeEventListener('keydown', resetInactivityTimer);
 
         clearTimeout(reconnectionTimer);
         clearInterval(reconnectionCountdownInterval);
@@ -206,6 +219,8 @@ document.addEventListener('DOMContentLoaded', () => {
         if (gameMode === 'pve' && currentPlayer === 2) return;
         if (gameMode === 'online' && currentPlayer !== playerColor) return;
         
+        resetInactivityTimer();
+
         const rect = canvas.getBoundingClientRect();
         const gridSize = canvas.width / (BOARD_SIZE + 1);
         const padding = gridSize;
@@ -282,6 +297,18 @@ document.addEventListener('DOMContentLoaded', () => {
         updateGameInfo();
         drawBoard();
         statusMessageP.textContent = '';
+    }
+
+    // --- Inactivity Timer ---
+    function resetInactivityTimer() {
+        if (inactivityTimer) clearTimeout(inactivityTimer);
+        inactivityTimer = setTimeout(kickPlayerForInactivity, 5 * 60 * 1000); // 5 minutes
+    }
+
+    function kickPlayerForInactivity() {
+        if (gameView.classList.contains('hidden')) return;
+        alert('您因长时间未操作，已自动断开连接。');
+        showModeSelectionView();
     }
 
     // --- Online Logic ---

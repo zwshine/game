@@ -40,6 +40,8 @@ document.addEventListener('DOMContentLoaded', () => {
     let reconnectionTimer = null;
     let reconnectionCountdownInterval = null;
     
+    let inactivityTimer = null;
+
     // Online Play State
     let peer = null;
     let conn = null;
@@ -60,11 +62,22 @@ document.addEventListener('DOMContentLoaded', () => {
         modeSelectionView.classList.add('hidden');
         gameView.classList.remove('hidden');
         resizeCanvas();
+        resetInactivityTimer();
+        window.addEventListener('mousemove', resetInactivityTimer);
+        window.addEventListener('keydown', resetInactivityTimer);
     }
 
     function showModeSelectionView() {
         gameView.classList.add('hidden');
         modeSelectionView.classList.remove('hidden');
+
+        // Stop inactivity timer
+        if (inactivityTimer) {
+            clearTimeout(inactivityTimer);
+            inactivityTimer = null;
+        }
+        window.removeEventListener('mousemove', resetInactivityTimer);
+        window.removeEventListener('keydown', resetInactivityTimer);
 
         clearTimeout(reconnectionTimer);
         clearInterval(reconnectionCountdownInterval);
@@ -280,6 +293,8 @@ document.addEventListener('DOMContentLoaded', () => {
         if (isGameOver) return;
         if (gameMode === 'online' && currentPlayer !== playerColor) return;
         if (gameMode === 'pve' && currentPlayer === 'black') return;
+        
+        resetInactivityTimer();
 
         const rect = canvas.getBoundingClientRect();
 
@@ -948,6 +963,18 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
     
+    // --- Inactivity Timer ---
+    function resetInactivityTimer() {
+        if (inactivityTimer) clearTimeout(inactivityTimer);
+        inactivityTimer = setTimeout(kickPlayerForInactivity, 5 * 60 * 1000); // 5 minutes
+    }
+
+    function kickPlayerForInactivity() {
+        if (gameView.classList.contains('hidden')) return; // Don't kick if not in game view
+        alert('您因长时间未操作，已自动断开连接。');
+        showModeSelectionView();
+    }
+
     // --- Event Listeners ---
     // Mode Selection
     pveButton.addEventListener('click', () => {
