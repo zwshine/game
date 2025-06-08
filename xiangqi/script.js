@@ -36,6 +36,10 @@ document.addEventListener('DOMContentLoaded', () => {
     let isGameOver = false;
     let gameMode = null; // 'pve', 'pvp', 'online'
     
+    let isWaitingForReconnect = false;
+    let reconnectionTimer = null;
+    let reconnectionCountdownInterval = null;
+    
     // Online Play State
     let peer = null;
     let conn = null;
@@ -61,6 +65,11 @@ document.addEventListener('DOMContentLoaded', () => {
     function showModeSelectionView() {
         gameView.classList.add('hidden');
         modeSelectionView.classList.remove('hidden');
+
+        clearTimeout(reconnectionTimer);
+        clearInterval(reconnectionCountdownInterval);
+        isWaitingForReconnect = false;
+
         if (peer) {
             peer.destroy();
             peer = null;
@@ -71,6 +80,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
         onlineStatus.textContent = '';
         onlineOptions.classList.add('hidden');
+        joinRoomBtn.textContent = '加入房间';
     }
 
     // --- Game Initialization ---
@@ -817,9 +827,19 @@ document.addEventListener('DOMContentLoaded', () => {
             joinRoomBtn.disabled = false;
         });
         peer.on('connection', (c) => { 
-            conn = c; 
-            onlineStatus.textContent = '有玩家正在连接...';
-            setupConnectionEvents(); 
+            if (isWaitingForReconnect) {
+                clearInterval(reconnectionCountdownInterval);
+                clearTimeout(reconnectionTimer);
+                isWaitingForReconnect = false;
+
+                conn = c;
+                onlineStatus.textContent = '对手已重新连接！';
+                setupConnectionEvents();
+            } else {
+                conn = c; 
+                onlineStatus.textContent = '有玩家正在连接...';
+                setupConnectionEvents(); 
+            }
         });
         peer.on('error', (err) => { 
             console.error('PeerJS error:', err); 
@@ -829,6 +849,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     function createRoom() {
         playerColor = 'red';
+        localStorage.removeItem('xiangqi_last_game_id');
         onlineStatus.textContent = `房间已创建, 等待好友加入... (ID: ${peer.id})`;
         // Don't init board yet, wait for connection
     }
@@ -873,8 +894,13 @@ document.addEventListener('DOMContentLoaded', () => {
                     moveHistory = data.moveHistory;
                     lastMove = moveHistory.length > 0 ? moveHistory[moveHistory.length - 1].move : null;
                     isGameOver = false;
+                    
+                    if (playerColor === 'black') { // Joiner just connected
+                        localStorage.setItem('xiangqi_last_game_id', conn.peer);
+                    }
+
                     updateGameInfo();
-                    onlineStatus.textContent = `同步成功! 您是黑方.`;
+                    onlineStatus.textContent = `同步成功! 您是${playerColor === 'red' ? '红方' : '黑方'}.`;
                     showGameView();
                     break;
                 case 'move':
@@ -893,15 +919,45 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         });
         conn.on('close', () => { 
-            onlineStatus.textContent = '对手已断开连接'; 
-            showModeSelectionView();
+            if (playerColor === 'red' && gameMode === 'online') { // Host behavior
+                isWaitingForReconnect = true;
+                conn = null; 
+
+                let countdown = 60;
+                onlineStatus.textContent = `对手已断开. 等待重连... ${countdown}s`;
+
+                reconnectionCountdownInterval = setInterval(() => {
+                    countdown--;
+                    onlineStatus.textContent = `对手已断开. 等待重连... ${countdown}s`;
+                    if (countdown <= 0) {
+                        clearInterval(reconnectionCountdownInterval);
+                    }
+                }, 1000);
+
+                reconnectionTimer = setTimeout(() => {
+                    if (isWaitingForReconnect) {
+                        alert('对手重连超时，游戏结束。');
+                        isWaitingForReconnect = false;
+                        showModeSelectionView();
+                    }
+                }, 60000);
+            } else { // Joiner behavior
+                alert('与房主的连接已断开，游戏结束。');
+                showModeSelectionView();
+            }
         });
     }
     
     // --- Event Listeners ---
     // Mode Selection
-    pveButton.addEventListener('click', () => startGame('pve'));
-    pvpButton.addEventListener('click', () => startGame('pvp'));
+    pveButton.addEventListener('click', () => {
+        localStorage.removeItem('xiangqi_last_game_id');
+        startGame('pve');
+    });
+    pvpButton.addEventListener('click', () => {
+        localStorage.removeItem('xiangqi_last_game_id');
+        startGame('pvp');
+    });
     onlineButton.addEventListener('click', () => {
         onlineOptions.classList.toggle('hidden');
         if (!peer) {
@@ -951,5 +1007,10 @@ document.addEventListener('DOMContentLoaded', () => {
     backBtn.addEventListener('click', showModeSelectionView);
     
     // Initial state
+    const lastGameId = localStorage.getItem('xiangqi_last_game_id');
+    if (lastGameId) {
+        roomIdInput.value = lastGameId;
+        joinRoomBtn.textContent = '重连上一局';
+    }
     showModeSelectionView();
 });

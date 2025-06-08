@@ -34,6 +34,9 @@ document.addEventListener('DOMContentLoaded', () => {
     let lastMove = null;
     
     // --- Online State ---
+    let isWaitingForReconnect = false;
+    let reconnectionTimer = null;
+    let reconnectionCountdownInterval = null;
     let peer = null;
     let conn = null;
     let playerColor = 1; // 1 for host (black), 2 for joiner (white)
@@ -48,12 +51,18 @@ document.addEventListener('DOMContentLoaded', () => {
     function showModeSelectionView() {
         gameView.classList.add('hidden');
         modeSelectionView.classList.remove('hidden');
+
+        clearTimeout(reconnectionTimer);
+        clearInterval(reconnectionCountdownInterval);
+        isWaitingForReconnect = false;
+
         if (peer) {
             peer.destroy();
             peer = null;
         }
         onlineStatus.textContent = '';
         onlineOptions.classList.add('hidden');
+        joinRoomBtn.textContent = '加入房间';
     }
 
     // --- Game Initialization ---
@@ -289,9 +298,18 @@ document.addEventListener('DOMContentLoaded', () => {
             joinRoomBtn.disabled = false;
         });
         peer.on('connection', (c) => { 
-            conn = c; 
-            onlineStatus.textContent = '有玩家正在连接...';
-            setupConnectionEvents(); 
+            if (isWaitingForReconnect) {
+                clearInterval(reconnectionCountdownInterval);
+                clearTimeout(reconnectionTimer);
+                isWaitingForReconnect = false;
+                conn = c;
+                onlineStatus.textContent = '对手已重新连接！';
+                setupConnectionEvents();
+            } else {
+                conn = c; 
+                onlineStatus.textContent = '有玩家正在连接...';
+                setupConnectionEvents(); 
+            }
         });
         peer.on('error', (err) => { 
             console.error('PeerJS error:', err); 
@@ -301,6 +319,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     function createRoom() {
         playerColor = 1; // Host is black
+        localStorage.removeItem('gomoku_last_game_id');
         if (peer && peer.id) {
             onlineStatus.textContent = `房间已创建, 等待好友加入... (ID: ${peer.id})`;
         } else {
@@ -312,6 +331,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const remoteId = roomIdInput.value.trim();
         if (!remoteId || !peer) return;
         
+        localStorage.setItem('gomoku_last_game_id', remoteId);
         onlineStatus.textContent = `正在连接到 ${remoteId}...`;
         conn = peer.connect(remoteId, { reliable: true });
 
@@ -347,6 +367,11 @@ document.addEventListener('DOMContentLoaded', () => {
                     currentPlayer = data.currentPlayer;
                     lastMove = moveHistory.length > 0 ? moveHistory[moveHistory.length - 1] : null;
                     isGameOver = false;
+
+                    if (playerColor === 2) { // Joiner just connected
+                        localStorage.setItem('gomoku_last_game_id', conn.peer);
+                    }
+
                     updateGameInfo();
                     onlineStatus.textContent = `同步成功! 您是白方.`;
                     showGameView();
@@ -367,14 +392,44 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         });
         conn.on('close', () => { 
-            onlineStatus.textContent = '对手已断开连接'; 
-            showModeSelectionView();
+            if (playerColor === 1 && gameMode === 'online') { // Host behavior
+                isWaitingForReconnect = true;
+                conn = null;
+
+                let countdown = 60;
+                onlineStatus.textContent = `对手已断开. 等待重连... ${countdown}s`;
+
+                reconnectionCountdownInterval = setInterval(() => {
+                    countdown--;
+                    onlineStatus.textContent = `对手已断开. 等待重连... ${countdown}s`;
+                    if (countdown <= 0) {
+                        clearInterval(reconnectionCountdownInterval);
+                    }
+                }, 1000);
+
+                reconnectionTimer = setTimeout(() => {
+                    if (isWaitingForReconnect) {
+                        alert('对手重连超时，游戏结束。');
+                        isWaitingForReconnect = false;
+                        showModeSelectionView();
+                    }
+                }, 60000);
+            } else { // Joiner behavior
+                alert('与房主的连接已断开，游戏结束。');
+                showModeSelectionView();
+            }
         });
     }
     
     // --- Event Listeners ---
-    pveButton.addEventListener('click', () => startGame('pve'));
-    pvpButton.addEventListener('click', () => startGame('pvp'));
+    pveButton.addEventListener('click', () => {
+        localStorage.removeItem('gomoku_last_game_id');
+        startGame('pve');
+    });
+    pvpButton.addEventListener('click', () => {
+        localStorage.removeItem('gomoku_last_game_id');
+        startGame('pvp');
+    });
     onlineButton.addEventListener('click', () => {
         onlineOptions.classList.toggle('hidden');
         if (!peer) startGame('online');
@@ -427,6 +482,11 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     // --- Initial State ---
+    const lastGameId = localStorage.getItem('gomoku_last_game_id');
+    if (lastGameId) {
+        roomIdInput.value = lastGameId;
+        joinRoomBtn.textContent = '重连上一局';
+    }
     showModeSelectionView();
 });
 // NOTE: The complex AI logic from the original file (findBestMove, minimax, etc.) needs to be appended here.
