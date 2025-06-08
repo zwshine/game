@@ -60,24 +60,31 @@
             color: #666;
             font-size: 14px;
         }
-        #visit-counter {
-            position: fixed;
-            top: 20px;
-            right: 20px;
-            background-color: #fff;
-            padding: 8px 15px;
-            border-radius: 16px;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
-            color: #333;
-            font-size: 14px;
-            font-weight: 500;
-            z-index: 1000;
+        .card.disabled {
+            background-color: #f0f0f0;
+            cursor: not-allowed;
+            color: #aaa;
+        }
+        .card.disabled:hover {
+            transform: none;
+            box-shadow: none;
+        }
+        .card.disabled h3, .card.disabled p {
+            color: #999;
+        }
+        .status-badge {
+            display: inline-block;
+            margin-top: 10px;
+            padding: 3px 8px;
+            font-size: 12px;
+            font-weight: bold;
+            color: #fff;
+            background-color: #aaa;
+            border-radius: 12px;
         }
     </style>
 </head>
 <body>
-    <div id="visit-counter">访问: ...</div>
-
     <div class="main-container">
         <h1>游戏 & 工具</h1>
 
@@ -92,6 +99,31 @@
                     <h3>五子棋</h3>
                     <p>简单易上手的连珠游戏。</p>
                 </div>
+                <div class="card disabled" id="billiards-card">
+                    <h3>台球</h3>
+                    <p>经典的桌面台球游戏。</p>
+                    <span class="status-badge">未开发</span>
+                </div>
+                <div class="card disabled" id="doudizhu-card">
+                    <h3>斗地主</h3>
+                    <p>流行的三人扑克牌游戏。</p>
+                    <span class="status-badge">未开发</span>
+                </div>
+                <div class="card disabled" id="junqi-card">
+                    <h3>军旗</h3>
+                    <p>中国特色的战争策略棋盘游戏。</p>
+                    <span class="status-badge">未开发</span>
+                </div>
+                <div class="card disabled" id="go-card">
+                    <h3>围棋</h3>
+                    <p>古老而深邃的策略棋盘游戏。</p>
+                    <span class="status-badge">未开发</span>
+                </div>
+                <div class="card disabled" id="ludo-card">
+                    <h3>飞行棋</h3>
+                    <p>经典的家庭休闲游戏。</p>
+                    <span class="status-badge">未开发</span>
+                </div>
             </div>
         </div>
 
@@ -105,28 +137,5 @@
             </div>
         </div>
     </div>
-    <script>
-        const visitCounter = document.getElementById('visit-counter');
-
-        function updateVisitCount() {
-            // 使用一个免费的第三方API (countapi.xyz) 来记录和获取全局访问次数
-            // 'cursor-demo-2' 和 'visits' 是唯一的命名空间和键，以确保我们得到的是自己网站的计数
-            fetch('https://api.countapi.xyz/hit/cursor-demo-2/visits')
-                .then(response => response.json())
-                .then(data => {
-                    if (data.value) {
-                        visitCounter.textContent = `访问: ${data.value}`;
-                    } else {
-                        visitCounter.textContent = '访问: N/A';
-                    }
-                })
-                .catch(error => {
-                    console.error('获取全局访问次数失败:', error);
-                    visitCounter.textContent = '访问: 获取失败';
-                });
-        }
-
-        updateVisitCount();
-    </script>
 </body>
 </html> 

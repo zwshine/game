@@ -26,6 +26,18 @@
         </div>
 
         <div class="tool-box">
+            <h2>IMEI 校验码计算器</h2>
+            <div class="imei-section">
+                <div class="input-group">
+                    <label for="imei-prefix">IMEI前14位:</label>
+                    <input type="text" id="imei-prefix" placeholder="输入14位数字" maxlength="14">
+                    <button class="primary" onclick="calculateAndShowChecksum()">计算校验码</button>
+                </div>
+                <div id="checksum-result" class="status"></div>
+            </div>
+        </div>
+
+        <div class="tool-box">
             <div class="modify-panel">
                 <h3>修改选项 <small>(默认修改FAC和SNR)</small></h3>
                 
@@ -69,7 +81,7 @@
         
         <!-- ... 原有的捐赠模块 ... -->
         <div id="donate-fixed-box">
-            <img src="https://www.aircloud.wiki/images/wechat-pay.jpg" alt="微信赞赏码">
+            <img src="https://im.nbwei.ggff.net/Qexo/25/6/be516e7842a96d9f52a9dee56b0624b3.png" alt="微信赞赏码">
             <p class="donate-text">如果觉得这个工具有用，可以请我喝杯咖啡！</p>
         </div>
     </div>
@@ -80,3 +92,5 @@
     <script src="../js/imei-logic.js"></script>
 </body>
 </html>
+
+

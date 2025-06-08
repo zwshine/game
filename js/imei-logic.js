@@ -114,6 +114,29 @@ function clearAll() {
     status.className = 'status';
     document.getElementById('new-imei-list').innerHTML = '';
     document.getElementById('snr-input').value = '';
+    
+    // 清空校验码计算器部分
+    document.getElementById('imei-prefix').value = '';
+    const checksumResult = document.getElementById('checksum-result');
+    checksumResult.textContent = '';
+    checksumResult.className = 'status';
+}
+
+function calculateAndShowChecksum() {
+    const prefixInput = document.getElementById('imei-prefix').value.trim();
+    const resultElement = document.getElementById('checksum-result');
+
+    if (!prefixInput || prefixInput.length !== 14 || !/^\d+$/.test(prefixInput)) {
+        resultElement.textContent = "× 无效：请输入14位纯数字。";
+        resultElement.className = "status show invalid";
+        return;
+    }
+
+    const checkDigit = calculateCheckDigit(prefixInput);
+    const fullImei = prefixInput + checkDigit;
+
+    resultElement.innerHTML = `✓ 计算成功！完整IMEI: <strong>${fullImei}</strong> (校验码: ${checkDigit})`;
+    resultElement.className = "status show valid";
 }
 
 function copyToClipboard(text) {
