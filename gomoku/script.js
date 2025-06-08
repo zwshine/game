@@ -81,13 +81,17 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     function drawPieces() {
-        for (let y = 0; y < BOARD_SIZE; y++) {
-            for (let x = 0; x < BOARD_SIZE; x++) {
-                if (board[y][x] !== 0) {
-                    drawPiece(x, y, board[y][x]);
+        const drawBoardPieces = () => {
+            for (let y = 0; y < BOARD_SIZE; y++) {
+                for (let x = 0; x < BOARD_SIZE; x++) {
+                    if (board[y][x] !== 0) {
+                        drawPiece(x, y, board[y][x]);
+                    }
                 }
             }
-        }
+        };
+
+        drawBoardPieces();
         if (lastMove) {
             highlightLastMove(lastMove.x, lastMove.y);
         }
@@ -560,4 +564,4 @@ document.addEventListener('DOMContentLoaded', () => {
     createRoomButton.addEventListener('click', createRoom);
     joinRoomButton.addEventListener('click', joinRoom);
     initGame();
-}); 
+});

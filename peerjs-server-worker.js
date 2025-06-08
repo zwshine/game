@@ -88,7 +88,7 @@ class PeerJSWSServer {
         });
 
         ws.addEventListener("error", (err) => {
-            log('ws error', id, err)
+            log('ws error', id, err.message, err.stack);
             this.onSocketClose(ws, id);
         });
     }
@@ -192,4 +192,4 @@ export default {
         // Forward the request to the Durable Object.
         return stub.fetch(request);
     }
-}; 
+};

@@ -140,14 +140,18 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     function drawPieces() {
-        for (let y = 0; y < BOARD_HEIGHT; y++) {
-            for (let x = 0; x < BOARD_WIDTH; x++) {
-                const piece = board[y][x];
-                if (piece !== 0) {
-                    drawPiece(x, y, piece);
+        const drawBoardPieces = () => {
+            for (let y = 0; y < BOARD_HEIGHT; y++) {
+                for (let x = 0; x < BOARD_WIDTH; x++) {
+                    const piece = board[y][x];
+                    if (piece !== 0) {
+                        drawPiece(x, y, piece);
+                    }
                 }
             }
-        }
+        };
+
+        drawBoardPieces();
         
         if (lastMove) {
             highlightSquare(lastMove.fromX, lastMove.fromY, 'rgba(0, 255, 0, 0.5)');
@@ -609,7 +613,13 @@ document.addEventListener('DOMContentLoaded', () => {
         return totalScore;
     }
 
+    const minimaxCache = new Map();
     function minimax(depth, isMaximizing) {
+        const cacheKey = `${depth}-${isMaximizing}-${JSON.stringify(board)}`;
+        if (minimaxCache.has(cacheKey)) {
+            return minimaxCache.get(cacheKey);
+        }
+
         if (depth === 0) {
             return evaluateBoard();
         }
@@ -645,7 +655,8 @@ document.addEventListener('DOMContentLoaded', () => {
             board[fromY][fromX] = movingPiece;
             board[toY][toX] = capturedPiece;
         }
-        
+
+        minimaxCache.set(cacheKey, bestValue);
         return bestValue;
     }
 
@@ -750,23 +761,44 @@ document.addEventListener('DOMContentLoaded', () => {
         if (!remoteId || !peer) return;
         
         roomInfo.textContent = `正在连接到 ${remoteId}...`;
-        conn = peer.connect(remoteId);
+        conn = peer.connect(remoteId, { reliable: true });
         setupConnectionEvents();
     }
 
     function setupConnectionEvents() {
         if (!conn) return;
         conn.on('open', () => {
-            if (!isOnlineMode) return;
             playerColor = 'black'; // Joiner is black
-            initBoard();
-            roomInfo.textContent = `连接成功! 您是黑方.`;
-            conn.send({type: 'sync', msg: '连接成功! 您是红方.'});
+            initBoard(); // init board for joiner. currentPlayer will be 'red'
+            roomInfo.textContent = `连接成功! 您是黑方. 等待房主同步棋盘...`;
+            // Request full sync from host
+            conn.send({type: 'sync_request'});
         });
         conn.on('data', (data) => {
             switch (data.type) {
-                case 'sync':
-                    roomInfo.textContent = data.msg;
+                case 'sync_request':
+                    // Host receives request and sends back the current state
+                    if (playerColor === 'red') {
+                        conn.send({
+                            type: 'sync_response',
+                            board: board,
+                            currentPlayer: currentPlayer,
+                            moveHistory: moveHistory
+                        });
+                        roomInfo.textContent = '玩家已连接. 您是红方，请走棋.';
+                    }
+                    break;
+                case 'sync_response':
+                    // Joiner receives the current state and applies it
+                    board = data.board;
+                    currentPlayer = data.currentPlayer;
+                    moveHistory = data.moveHistory;
+                    lastMove = moveHistory.length > 0 ? moveHistory[moveHistory.length - 1] : null;
+                    isGameOver = false; // Assume game is ongoing
+                    drawBoard();
+                    drawPieces();
+                    updateGameInfo();
+                    roomInfo.textContent = `同步成功! 您是黑方.`;
                     break;
                 case 'move':
                     executeMove(data.move);
@@ -821,4 +853,4 @@ document.addEventListener('DOMContentLoaded', () => {
     joinRoomButton.addEventListener('click', joinRoom);
 
     initBoard();
-}); 
+});
