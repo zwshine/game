@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>中国象棋</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="game-container">
+        <h1>中国象棋</h1>
+        <div id="chessboard-container">
+            <canvas id="chessboard" width="540" height="600"></canvas>
+        </div>
+        <div id="game-info">
+            <p>当前走子: <span id="current-player">红方</span></p>
+            <p id="status-message"></p>
+        </div>
+        <div class="controls">
+            <button id="reset-button">重新开始</button>
+            <button id="undo-button">悔棋</button>
+            <button id="ai-button">人机对战</button>
+            <button id="online-button">联机对战</button>
+            <a href="../index.html" class="back-button">返回菜单</a>
+        </div>
+        <div id="online-controls" style="display: none;">
+            <div class="room-controls">
+                <input type="text" id="room-id" placeholder="输入房间ID">
+                <button id="create-room" disabled>创建房间</button>
+                <button id="join-room" disabled>加入房间</button>
+            </div>
+            <div id="room-info"></div>
+        </div>
+    </div>
+    <script src="https://unpkg.com/peerjs@1.4.7/dist/peerjs.min.js"></script>
+    <script src="script.js"></script>
+</body>
+</html>

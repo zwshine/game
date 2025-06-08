@@ -1,0 +1,12 @@
+name = "my-games-signaling-server"
+main = "peerjs-server-worker.js"
+compatibility_date = "2023-11-21"
+
+[durable_objects]
+bindings = [
+  { name = "PEERJS_SERVER", class_name = "PeerJSServer" }
+]
+
+[[migrations]]
+tag = "v1"
+new_sqlite_classes = ["PeerJSServer"] 

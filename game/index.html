@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>棋类游戏合集</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, "Noto Sans", sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji";
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            background-color: #f0f2f5;
+            margin: 0;
+        }
+        .container {
+            text-align: center;
+        }
+        h1 {
+            color: #333;
+            margin-bottom: 40px;
+        }
+        .game-selection a {
+            display: inline-block;
+            background-color: #fff;
+            color: #333;
+            padding: 20px 40px;
+            margin: 10px;
+            border-radius: 10px;
+            text-decoration: none;
+            font-size: 20px;
+            font-weight: 500;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+            transition: all 0.3s ease;
+        }
+        .game-selection a:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 8px 20px rgba(0,0,0,0.15);
+            background-color: #4CAF50;
+            color: white;
+        }
+        .game-selection a.disabled {
+            background-color: #e0e0e0;
+            color: #9e9e9e;
+            cursor: not-allowed;
+        }
+        .game-selection a.disabled:hover {
+            transform: none;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+        }
+
+        @media (max-width: 600px) {
+            h1 {
+                font-size: 24px;
+            }
+            .game-selection a {
+                display: block;
+                padding: 15px;
+                margin: 15px 0;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>棋类游戏合集</h1>
+        <div class="game-selection">
+            <a href="./xiangqi/index.html">中国象棋</a>
+            <a href="./gomoku/index.html">五子棋</a>
+            <a href="#" class="disabled">军棋 (开发中)</a>
+        </div>
+    </div>
+    <script>
+        // 检测是否支持Cloudflare WebRTC服务
+        if (window.RTCPeerConnection) {
+            console.log("WebRTC支持已检测");
+        } else {
+            console.warn("当前浏览器不支持WebRTC，联机功能可能不可用");
+        }
+    </script>
+</body>
+</html> 
