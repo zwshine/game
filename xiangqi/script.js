@@ -926,10 +926,14 @@ document.addEventListener('DOMContentLoaded', () => {
     undoButton.addEventListener('click', () => {
         if (gameMode === 'online') {
             statusMessageP.textContent = '联机模式不支持悔棋。';
-            setTimeout(() => { if (statusMessageP.textContent === '联机模式不支持悔棋。') statusMessageP.textContent = ''; }, 2000);
-        } else {
-            undoMove();
+            setTimeout(() => { 
+                if (statusMessageP.textContent === '联机模式不支持悔棋。') {
+                    statusMessageP.textContent = ''; 
+                }
+            }, 2000);
+            return; // Explicitly stop execution for online mode
         }
+        undoMove();
     });
     
     fullscreenBtn.addEventListener('click', () => {
