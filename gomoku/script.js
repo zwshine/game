@@ -333,22 +333,32 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     // --- Online Logic ---
+    function handlePeerOpen(id) {
+        onlineStatus.textContent = `我的ID: ${id}`;
+        if (gameMode === 'matchmaking') {
+            startMatchmaking(id);
+        } else { // 'online' mode for rooms
+            createRoomBtn.disabled = false;
+            joinRoomBtn.disabled = false;
+        }
+    }
+
     function initOnlineMode() {
-        if (peer && peer.open) return;
+        if (peer && peer.open) {
+            handlePeerOpen(peer.id);
+            return;
+        }
+        if (peer) {
+            peer.destroy();
+        }
+
         onlineStatus.textContent = '正在连接服务器...';
         
         const peerId = 'gomoku-h5-' + Math.random().toString(36).substr(2, 9);
         peer = new Peer(peerId, { host: 'peerjs.92k.de', path: '/', secure: true, debug: 2 });
 
-        peer.on('open', (id) => { 
-            onlineStatus.textContent = `我的ID: ${id}`;
-            if (gameMode === 'matchmaking') {
-                startMatchmaking(id);
-            } else {
-                createRoomBtn.disabled = false;
-                joinRoomBtn.disabled = false;
-            }
-        });
+        peer.on('open', handlePeerOpen);
+
         peer.on('connection', (c) => { 
             if (matchmakingPollInterval) {
                 clearInterval(matchmakingPollInterval);

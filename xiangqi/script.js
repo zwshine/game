@@ -836,42 +836,54 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     // --- Online Mode Logic ---
+    function handlePeerOpen(id) {
+        onlineStatus.textContent = `我的ID: ${id}`;
+        if (gameMode === 'matchmaking') {
+            startMatchmaking(id);
+        } else { // 'online' mode for rooms
+            createRoomBtn.disabled = false;
+            joinRoomBtn.disabled = false;
+        }
+    }
+
     function initOnlineMode() {
-        if (peer && peer.open) return;
+        if (peer && peer.open) {
+            handlePeerOpen(peer.id);
+            return;
+        }
+        if (peer) {
+            peer.destroy();
+        }
+        
         onlineStatus.textContent = '正在连接服务器...';
         
         const peerId = 'xiangqi-h5-' + Math.random().toString(36).substr(2, 9);
+        peer = new Peer(peerId, { host: 'peerjs.92k.de', path: '/', secure: true, debug: 2 });
 
-        peer = new Peer(peerId, {
-            host: 'peerjs.92k.de',
-            path: '/', 
-            secure: true,
-            debug: 2,
-        });
+        peer.on('open', handlePeerOpen);
 
-        peer.on('open', (id) => { 
-            onlineStatus.textContent = `我的ID: ${id} (可分享给好友)`; 
-            createRoomBtn.disabled = false;
-            joinRoomBtn.disabled = false;
-        });
-        peer.on('connection', (c) => { 
+        peer.on('connection', (c) => {
+            if (matchmakingPollInterval) {
+                clearInterval(matchmakingPollInterval);
+                matchmakingPollInterval = null;
+            }
             if (isWaitingForReconnect) {
                 clearInterval(reconnectionCountdownInterval);
                 clearTimeout(reconnectionTimer);
                 isWaitingForReconnect = false;
-
                 conn = c;
                 onlineStatus.textContent = '对手已重新连接！';
                 setupConnectionEvents();
             } else {
-                conn = c; 
+                conn = c;
                 onlineStatus.textContent = '有玩家正在连接...';
-                setupConnectionEvents(); 
+                setupConnectionEvents();
             }
         });
-        peer.on('error', (err) => { 
-            console.error('PeerJS error:', err); 
-            onlineStatus.textContent = `连接错误: ${err.type}.`; 
+
+        peer.on('error', (err) => {
+            console.error('PeerJS error:', err);
+            onlineStatus.textContent = `连接错误: ${err.type}.`;
         });
     }
 
