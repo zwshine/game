@@ -1,4 +1,5 @@
 document.addEventListener('DOMContentLoaded', () => {
+    audioManager.load('move', '../piece_sound.mp3');
     // Views
     const modeSelectionView = document.getElementById('mode-selection-view');
     const gameView = document.getElementById('game-view');
@@ -22,6 +23,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const backBtn = document.getElementById('back-btn');
     const currentPlayerSpan = document.getElementById('current-player');
     const statusMessageP = document.getElementById('status-message');
+    const pieceSound = document.getElementById('piece-sound');
     
     const GRID_SIZE = 60;
     const BOARD_WIDTH = 9;
@@ -356,14 +358,15 @@ document.addEventListener('DOMContentLoaded', () => {
         const boardStateBeforeMove = JSON.parse(JSON.stringify(board));
         
         moveHistory.push({ move, boardState: boardStateBeforeMove, player: currentPlayer });
-        
+
         board[toY][toX] = movingPiece;
         board[fromY][fromX] = 0;
         
-        lastMove = move;
-        selectedPiece = null;
+        audioManager.play('move');
         
-        currentPlayer = currentPlayer === 'red' ? 'black' : 'red';
+        lastMove = { fromX, fromY, toX, toY };
+        selectedPiece = null;
+        currentPlayer = (currentPlayer === 'red') ? 'black' : 'red';
         
         updateGameInfo();
 

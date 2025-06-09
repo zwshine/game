@@ -1,4 +1,5 @@
 document.addEventListener('DOMContentLoaded', () => {
+    audioManager.load('move', '../piece_sound.mp3');
     // --- DOM Element Selection ---
     const modeSelectionView = document.getElementById('mode-selection-view');
     const gameView = document.getElementById('game-view');
@@ -250,6 +251,7 @@ document.addEventListener('DOMContentLoaded', () => {
         board[y][x] = player;
         moveHistory.push(move);
         lastMove = { x, y };
+        audioManager.play('move');
         drawBoard();
 
         if (checkWin(x, y)) {
@@ -490,22 +492,75 @@ document.addEventListener('DOMContentLoaded', () => {
     });
     backBtn.addEventListener('click', showModeSelectionView);
     
-    // --- AI Logic (simplified, keep original for full functionality) ---
+    // --- AI Logic ---
     function makeAIMove() {
-        // This is a placeholder for the complex AI logic
-        // The original AI logic (`findBestMove`, `minimax`, `evaluateBoard`, etc.) should be kept
-        const availableMoves = [];
+        if (isGameOver) return;
+        let bestScore = -Infinity;
+        let bestMove = null;
         for (let y = 0; y < BOARD_SIZE; y++) {
             for (let x = 0; x < BOARD_SIZE; x++) {
                 if (board[y][x] === 0) {
-                    availableMoves.push({x, y});
+                    let score = calculateScore(x, y, 2) + calculateScore(x, y, 1);
+                    if (score > bestScore) {
+                        bestScore = score;
+                        bestMove = { x, y };
+                    }
                 }
             }
         }
-        if (availableMoves.length > 0) {
-            const move = availableMoves[Math.floor(Math.random() * availableMoves.length)];
-            executeMove({ ...move, player: 2 });
+        if (bestMove) {
+            executeMove({ ...bestMove, player: 2 });
         }
+    }
+
+    function calculateScore(x, y, player) {
+        let score = 0;
+        const directions = [[1, 0], [0, 1], [1, 1], [1, -1]];
+        for (const [dx, dy] of directions) {
+            let count = 1;
+            let openEnds = 0;
+            let line = [{x, y}];
+            for (let i = 1; i < 5; i++) {
+                const nx = x + i * dx;
+                const ny = y + i * dy;
+                if (nx >= 0 && nx < BOARD_SIZE && ny >= 0 && ny < BOARD_SIZE) {
+                    if (board[ny][nx] === player) {
+                        count++;
+                        line.push({x: nx, y: ny});
+                    } else if (board[ny][nx] === 0) {
+                        openEnds++;
+                        break;
+                    } else {
+                        break;
+                    }
+                }
+            }
+            for (let i = 1; i < 5; i++) {
+                const nx = x - i * dx;
+                const ny = y - i * dy;
+                if (nx >= 0 && nx < BOARD_SIZE && ny >= 0 && ny < BOARD_SIZE) {
+                    if (board[ny][nx] === player) {
+                        count++;
+                        line.push({x: nx, y: ny});
+                    } else if (board[ny][nx] === 0) {
+                        openEnds++;
+                        break;
+                    } else {
+                        break;
+                    }
+                }
+            }
+
+            if (count >= 5) return 100000;
+            if (count === 4 && openEnds === 2) score += 50000;
+            if (count === 4 && openEnds === 1) score += 1000;
+            if (count === 3 && openEnds === 2) score += 500;
+            if (count === 3 && openEnds === 1) score += 100;
+            if (count === 2 && openEnds === 2) score += 50;
+            if (count === 2 && openEnds === 1) score += 10;
+            if (count === 1 && openEnds === 2) score += 1;
+        }
+        return score;
     }
 
     // --- Initial State ---
@@ -516,5 +571,3 @@ document.addEventListener('DOMContentLoaded', () => {
     }
     showModeSelectionView();
 });
-// NOTE: The complex AI logic from the original file (findBestMove, minimax, etc.) needs to be appended here.
-// The provided stub for makeAIMove is just for structural purposes.

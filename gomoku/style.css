@@ -199,9 +199,10 @@ h1 {
 .ingame-controls button#undo-button:hover { background-color: #ffa000; }
 
 @media (max-width: 700px) {
-    .game-container {
-        padding: 10px;
+    .container {
+        padding: 15px;
         margin: 10px;
+        width: auto;
     }
     
     #board-container, #chessboard {
@@ -213,4 +214,50 @@ h1 {
     .controls {
         flex-direction: column;
     }
+}
+
+@media (max-width: 480px) {
+    h1 {
+        font-size: 24px;
+        margin-bottom: 20px;
+    }
+
+    .mode-button {
+        padding: 12px 15px;
+        font-size: 16px;
+    }
+
+    #mode-selection-view .mode-options {
+        gap: 10px;
+    }
+
+    .ingame-controls {
+        gap: 10px;
+    }
+
+    .ingame-controls button {
+        padding: 8px 15px;
+        font-size: 14px;
+    }
+
+    #game-view .game-header {
+        padding: 0 5px;
+    }
+}
+
+/* Fullscreen Enhancements */
+body:fullscreen .container {
+    max-width: 95vw;
+    max-height: 95vh;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+}
+
+body:fullscreen #board-container {
+    width: 90vh; /* Adjust based on viewport height */
+    height: 90vh; /* Adjust based on viewport height */
+    max-width: 90vw;
+    padding-bottom: 0; /* Override aspect ratio padding */
+    margin: auto;
 } 
