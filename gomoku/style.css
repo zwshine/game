@@ -12,7 +12,7 @@ body {
 
 .container {
     width: 100%;
-    max-width: 680px;
+    max-width: 640px;
     margin: 20px;
     padding: 20px;
     background-color: #fff;
@@ -37,6 +37,8 @@ h1 {
     flex-direction: column;
     gap: 15px;
     margin-bottom: 20px;
+    max-width: 400px;
+    margin: 0 auto 20px;
 }
 
 .mode-button {
@@ -205,10 +207,17 @@ h1 {
         width: auto;
     }
     
-    #board-container, #chessboard {
+    .container.game-view {
+        padding: 5px;
+    }
+
+    #board-container {
         width: 100%;
-        height: auto;
-        max-width: 400px;
+    }
+
+    #chessboard {
+        width: 100%;
+        height: 100%;
     }
     
     .controls {
@@ -255,9 +264,13 @@ body:fullscreen .container {
 }
 
 body:fullscreen #board-container {
-    width: 90vh; /* Adjust based on viewport height */
-    height: 90vh; /* Adjust based on viewport height */
-    max-width: 90vw;
-    padding-bottom: 0; /* Override aspect ratio padding */
-    margin: auto;
+    width: auto;
+    height: 90vh; /* Adjust height for fullscreen */
+    padding-bottom: 0; /* Remove padding-based aspect ratio */
+}
+
+body:fullscreen #chessboard {
+    position: static;
+    width: 90vh; /* Maintain aspect ratio */
+    height: 90vh;
 } 

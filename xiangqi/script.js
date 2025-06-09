@@ -3,16 +3,18 @@ document.addEventListener('DOMContentLoaded', () => {
     // Views
     const modeSelectionView = document.getElementById('mode-selection-view');
     const gameView = document.getElementById('game-view');
+    const onlineOptions = document.getElementById('online-options');
+    const createRoomBtn = document.getElementById('create-room-btn');
+    const joinRoomBtn = document.getElementById('join-room-btn');
+    const roomIdInput = document.getElementById('room-id');
+    const onlineStatus = document.getElementById('online-status');
+    const backBtn = document.getElementById('back-btn');
+    const container = document.querySelector('.container');
 
     // Mode Selection Elements
     const pveButton = document.querySelector('.mode-button[data-mode="pve"]');
     const pvpButton = document.querySelector('.mode-button[data-mode="pvp"]');
     const onlineButton = document.querySelector('.mode-button[data-mode="online"]');
-    const onlineOptions = document.getElementById('online-options');
-    const roomIdInput = document.getElementById('room-id');
-    const createRoomBtn = document.getElementById('create-room-btn');
-    const joinRoomBtn = document.getElementById('join-room-btn');
-    const onlineStatus = document.getElementById('online-status');
 
     // Game View Elements
     const canvas = document.getElementById('chessboard');
@@ -20,7 +22,6 @@ document.addEventListener('DOMContentLoaded', () => {
     const resetButton = document.getElementById('reset-button');
     const undoButton = document.getElementById('undo-button');
     const fullscreenBtn = document.getElementById('fullscreen-btn');
-    const backBtn = document.getElementById('back-btn');
     const currentPlayerSpan = document.getElementById('current-player');
     const statusMessageP = document.getElementById('status-message');
     const pieceSound = document.getElementById('piece-sound');
@@ -63,6 +64,7 @@ document.addEventListener('DOMContentLoaded', () => {
     function showGameView() {
         modeSelectionView.classList.add('hidden');
         gameView.classList.remove('hidden');
+        container.classList.add('game-view');
         resizeCanvas();
         resetInactivityTimer();
         window.addEventListener('mousemove', resetInactivityTimer);
@@ -72,6 +74,7 @@ document.addEventListener('DOMContentLoaded', () => {
     function showModeSelectionView() {
         gameView.classList.add('hidden');
         modeSelectionView.classList.remove('hidden');
+        container.classList.remove('game-view');
 
         // Stop inactivity timer
         if (inactivityTimer) {

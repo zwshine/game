@@ -3,22 +3,23 @@ document.addEventListener('DOMContentLoaded', () => {
     // --- DOM Element Selection ---
     const modeSelectionView = document.getElementById('mode-selection-view');
     const gameView = document.getElementById('game-view');
+    const onlineOptions = document.getElementById('online-options');
+    const createRoomBtn = document.getElementById('create-room-btn');
+    const joinRoomBtn = document.getElementById('join-room-btn');
+    const roomIdInput = document.getElementById('room-id');
+    const onlineStatus = document.getElementById('online-status');
+    const backBtn = document.getElementById('back-btn');
+    const container = document.querySelector('.container');
 
     const pveButton = document.querySelector('.mode-button[data-mode="pve"]');
     const pvpButton = document.querySelector('.mode-button[data-mode="pvp"]');
     const onlineButton = document.querySelector('.mode-button[data-mode="online"]');
-    const onlineOptions = document.getElementById('online-options');
-    const roomIdInput = document.getElementById('room-id');
-    const createRoomBtn = document.getElementById('create-room-btn');
-    const joinRoomBtn = document.getElementById('join-room-btn');
-    const onlineStatus = document.getElementById('online-status');
 
     const canvas = document.getElementById('chessboard');
     const ctx = canvas.getContext('2d');
     const resetButton = document.getElementById('reset-button');
     const undoButton = document.getElementById('undo-button');
     const fullscreenBtn = document.getElementById('fullscreen-btn');
-    const backBtn = document.getElementById('back-btn');
     const currentPlayerSpan = document.getElementById('current-player');
     const statusMessageP = document.getElementById('status-message');
 
@@ -48,6 +49,7 @@ document.addEventListener('DOMContentLoaded', () => {
     function showGameView() {
         modeSelectionView.classList.add('hidden');
         gameView.classList.remove('hidden');
+        container.classList.add('game-view');
         resizeCanvas();
         resetInactivityTimer();
         window.addEventListener('mousemove', resetInactivityTimer);
@@ -57,6 +59,7 @@ document.addEventListener('DOMContentLoaded', () => {
     function showModeSelectionView() {
         gameView.classList.add('hidden');
         modeSelectionView.classList.remove('hidden');
+        container.classList.remove('game-view');
 
         // Stop inactivity timer
         if (inactivityTimer) {
@@ -194,13 +197,12 @@ document.addEventListener('DOMContentLoaded', () => {
         const padding = gridSize;
         const canvasX = padding + x * gridSize;
         const canvasY = padding + y * gridSize;
-        ctx.strokeStyle = 'red';
-        ctx.lineWidth = 2;
+        const radius = gridSize * PIECE_RADIUS_RATIO + 2; // Make the halo slightly larger than the piece
+
+        ctx.strokeStyle = 'rgba(255, 0, 0, 0.8)';
+        ctx.lineWidth = 2; // Use a slightly thinner line for a cleaner look
         ctx.beginPath();
-        ctx.moveTo(canvasX - 5, canvasY - 5);
-        ctx.lineTo(canvasX + 5, canvasY + 5);
-        ctx.moveTo(canvasX + 5, canvasY - 5);
-        ctx.lineTo(canvasX - 5, canvasY + 5);
+        ctx.arc(canvasX, canvasY, radius, 0, 2 * Math.PI);
         ctx.stroke();
     }
 

@@ -37,6 +37,8 @@ h1 {
     flex-direction: column;
     gap: 15px;
     margin-bottom: 20px;
+    max-width: 400px;
+    margin: 0 auto 20px;
 }
 
 .mode-button {
@@ -199,18 +201,81 @@ h1 {
 .ingame-controls button#undo-button:hover { background-color: #ffa000; }
 
 @media (max-width: 700px) {
-    .game-container {
+    .container {
         padding: 10px;
         margin: 10px;
     }
     
-    #chessboard-container, #chessboard {
+    .container.game-view {
+        padding: 5px;
+    }
+
+    #chessboard-container {
         width: 100%;
-        height: auto;
-        max-width: 400px;
+    }
+    
+    #chessboard {
+        width: 100%;
+        height: 100%;
     }
     
     .controls {
         flex-direction: column;
     }
+}
+
+@media (max-width: 480px) {
+    h1 {
+        font-size: 24px;
+        margin-bottom: 20px;
+    }
+
+    .mode-button {
+        padding: 12px 15px;
+        font-size: 16px;
+    }
+
+    #mode-selection-view .mode-options {
+        gap: 10px;
+    }
+
+    .ingame-controls {
+        gap: 10px;
+    }
+
+    .ingame-controls button {
+        padding: 8px 15px;
+        font-size: 14px;
+    }
+
+    #game-view .game-header {
+        padding: 0 5px;
+    }
+}
+
+/* Fullscreen Enhancements */
+body:fullscreen .container {
+    max-width: 95vw;
+    max-height: 95vh;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+}
+
+body:fullscreen #chessboard-container {
+    width: auto;
+    height: 90vh; /* Adjust height for fullscreen */
+    padding-bottom: 0; /* Remove padding-based aspect ratio */
+    flex-grow: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+body:fullscreen #chessboard {
+    position: static;
+    width: auto;
+    height: 100%;
+    max-width: none;
+    max-height: 90vh;
 } 
