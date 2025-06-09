@@ -15,6 +15,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const pveButton = document.querySelector('.mode-button[data-mode="pve"]');
     const pvpButton = document.querySelector('.mode-button[data-mode="pvp"]');
     const onlineButton = document.querySelector('.mode-button[data-mode="online"]');
+    const matchmakingButton = document.getElementById('matchmaking-btn');
 
     // Game View Elements
     const canvas = document.getElementById('chessboard');
@@ -37,7 +38,7 @@ document.addEventListener('DOMContentLoaded', () => {
     let currentPlayer = 'red';
     let selectedPiece = null;
     let isGameOver = false;
-    let gameMode = null; // 'pve', 'pvp', 'online'
+    let gameMode = null; // 'pve', 'pvp', 'online', 'matchmaking'
     
     let isWaitingForReconnect = false;
     let reconnectionTimer = null;
@@ -49,6 +50,7 @@ document.addEventListener('DOMContentLoaded', () => {
     let peer = null;
     let conn = null;
     let playerColor = 'red';
+    let matchmakingPollInterval = null;
 
     const PIECE_TEXT = {
         1: '车', 2: '马', 3: '相', 4: '仕', 5: '帅', 6: '炮', 7: '兵',
@@ -96,6 +98,10 @@ document.addEventListener('DOMContentLoaded', () => {
             conn.close();
             conn = null;
         }
+        if (matchmakingPollInterval) {
+            clearInterval(matchmakingPollInterval);
+            matchmakingPollInterval = null;
+        }
         onlineStatus.textContent = '';
         onlineOptions.classList.add('hidden');
         joinRoomBtn.textContent = '加入房间';
@@ -104,10 +110,11 @@ document.addEventListener('DOMContentLoaded', () => {
     // --- Game Initialization ---
     function startGame(mode) {
         gameMode = mode;
-        isGameOver = false;
-        if (gameMode === 'online') {
-            playerColor = 'red'; // Host is red by default
+        if (gameMode === 'online' || gameMode === 'matchmaking') {
             initOnlineMode();
+            if (gameMode === 'matchmaking') {
+                onlineStatus.textContent = "正在连接服务器...";
+            }
         } else {
             initBoard();
             showGameView();
@@ -976,8 +983,11 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     function kickPlayerForInactivity() {
-        if (gameView.classList.contains('hidden')) return; // Don't kick if not in game view
+        if (gameView.classList.contains('hidden')) return;
         alert('您因长时间未操作，已自动断开连接。');
+        if (gameMode === 'matchmaking' && peer && peer.id) {
+            cancelMatchmaking(peer.id);
+        }
         showModeSelectionView();
     }
 
@@ -993,12 +1003,21 @@ document.addEventListener('DOMContentLoaded', () => {
     });
     onlineButton.addEventListener('click', () => {
         onlineOptions.classList.toggle('hidden');
-        if (!peer) {
+        if (!peer && !onlineOptions.classList.contains('hidden')) {
             startGame('online');
         }
     });
+    matchmakingButton.addEventListener('click', () => {
+        if (matchmakingButton.textContent === '取消匹配') {
+            cancelMatchmaking(peer.id);
+            showModeSelectionView();
+        } else {
+            onlineOptions.classList.add('hidden');
+            startGame('matchmaking');
+        }
+    });
     createRoomBtn.addEventListener('click', createRoom);
-    joinRoomBtn.addEventListener('click', joinRoom);
+    joinRoomBtn.addEventListener('click', () => joinRoom());
 
     // Game View
     canvas.addEventListener('click', handleBoardClick);

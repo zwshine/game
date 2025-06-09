@@ -14,6 +14,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const pveButton = document.querySelector('.mode-button[data-mode="pve"]');
     const pvpButton = document.querySelector('.mode-button[data-mode="pvp"]');
     const onlineButton = document.querySelector('.mode-button[data-mode="online"]');
+    const matchmakingButton = document.getElementById('matchmaking-btn');
 
     const canvas = document.getElementById('chessboard');
     const ctx = canvas.getContext('2d');
@@ -32,7 +33,7 @@ document.addEventListener('DOMContentLoaded', () => {
     let moveHistory = [];
     let currentPlayer = 1; // 1: black, 2: white
     let isGameOver = false;
-    let gameMode = null; // 'pve', 'pvp', 'online'
+    let gameMode = null; // 'pve', 'pvp', 'online', 'matchmaking'
     let lastMove = null;
     
     // --- Online State ---
@@ -42,6 +43,7 @@ document.addEventListener('DOMContentLoaded', () => {
     let peer = null;
     let conn = null;
     let playerColor = 1; // 1 for host (black), 2 for joiner (white)
+    let matchmakingPollInterval = null;
 
     let inactivityTimer = null;
 
@@ -77,6 +79,10 @@ document.addEventListener('DOMContentLoaded', () => {
             peer.destroy();
             peer = null;
         }
+        if (matchmakingPollInterval) {
+            clearInterval(matchmakingPollInterval);
+            matchmakingPollInterval = null;
+        }
         onlineStatus.textContent = '';
         onlineOptions.classList.add('hidden');
         joinRoomBtn.textContent = '加入房间';
@@ -85,8 +91,12 @@ document.addEventListener('DOMContentLoaded', () => {
     // --- Game Initialization ---
     function startGame(mode) {
         gameMode = mode;
-        if (gameMode === 'online') {
+        if (gameMode === 'online' || gameMode === 'matchmaking') {
             initOnlineMode();
+            if (gameMode === 'matchmaking') {
+                // The actual matching process will start after peer is open
+                onlineStatus.textContent = "正在连接服务器...";
+            }
         } else {
             initGame();
             showGameView();
@@ -101,6 +111,10 @@ document.addEventListener('DOMContentLoaded', () => {
         lastMove = null;
         updateGameInfo();
         statusMessageP.textContent = '';
+        if (matchmakingPollInterval) {
+            clearInterval(matchmakingPollInterval);
+            matchmakingPollInterval = null;
+        }
         drawBoard();
     }
 
@@ -312,6 +326,9 @@ document.addEventListener('DOMContentLoaded', () => {
     function kickPlayerForInactivity() {
         if (gameView.classList.contains('hidden')) return;
         alert('您因长时间未操作，已自动断开连接。');
+        if (gameMode === 'matchmaking' && peer && peer.id) {
+            cancelMatchmaking(peer.id);
+        }
         showModeSelectionView();
     }
 
@@ -324,11 +341,19 @@ document.addEventListener('DOMContentLoaded', () => {
         peer = new Peer(peerId, { host: 'peerjs.92k.de', path: '/', secure: true, debug: 2 });
 
         peer.on('open', (id) => { 
-            onlineStatus.textContent = `我的ID: ${id}`; 
-            createRoomBtn.disabled = false;
-            joinRoomBtn.disabled = false;
+            onlineStatus.textContent = `我的ID: ${id}`;
+            if (gameMode === 'matchmaking') {
+                startMatchmaking(id);
+            } else {
+                createRoomBtn.disabled = false;
+                joinRoomBtn.disabled = false;
+            }
         });
         peer.on('connection', (c) => { 
+            if (matchmakingPollInterval) {
+                clearInterval(matchmakingPollInterval);
+                matchmakingPollInterval = null;
+            }
             if (isWaitingForReconnect) {
                 clearInterval(reconnectionCountdownInterval);
                 clearTimeout(reconnectionTimer);
@@ -358,16 +383,21 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
-    function joinRoom() {
-        const remoteId = roomIdInput.value.trim();
+    function joinRoom(opponentPeerId) {
+        const remoteId = opponentPeerId || roomIdInput.value.trim();
         if (!remoteId || !peer) return;
         
-        localStorage.setItem('gomoku_last_game_id', remoteId);
+        if (!opponentPeerId) { // Only set last game ID for manual joins
+            localStorage.setItem('gomoku_last_game_id', remoteId);
+        }
         onlineStatus.textContent = `正在连接到 ${remoteId}...`;
         conn = peer.connect(remoteId, { reliable: true });
 
         conn.on('open', () => {
-            playerColor = 2; // Joiner is white
+            playerColor = (gameMode === 'matchmaking') ? 1 : 2; // Match initiator is black
+            if (gameMode !== 'matchmaking') {
+                 playerColor = 2; // Joiner is white
+            }
             onlineStatus.textContent = `连接成功! 等待同步...`;
             conn.send({type: 'sync_request'});
         });
@@ -463,10 +493,21 @@ document.addEventListener('DOMContentLoaded', () => {
     });
     onlineButton.addEventListener('click', () => {
         onlineOptions.classList.toggle('hidden');
-        if (!peer) startGame('online');
+        if (!peer && !onlineOptions.classList.contains('hidden')) {
+            startGame('online');
+        }
+    });
+    matchmakingButton.addEventListener('click', () => {
+        if (matchmakingButton.textContent === '取消匹配') {
+            cancelMatchmaking(peer.id);
+            showModeSelectionView();
+        } else {
+            onlineOptions.classList.add('hidden'); // Hide room options
+            startGame('matchmaking');
+        }
     });
     createRoomBtn.addEventListener('click', createRoom);
-    joinRoomBtn.addEventListener('click', joinRoom);
+    joinRoomBtn.addEventListener('click', () => joinRoom());
 
     canvas.addEventListener('click', handleBoardClick);
     window.addEventListener('resize', resizeCanvas);
@@ -563,6 +604,70 @@ document.addEventListener('DOMContentLoaded', () => {
             if (count === 1 && openEnds === 2) score += 1;
         }
         return score;
+    }
+
+    // --- Matchmaking Logic ---
+    async function startMatchmaking(peerId) {
+        onlineStatus.textContent = '正在为您匹配对手...';
+        matchmakingButton.textContent = '取消匹配';
+        try {
+            const response = await fetch('/match', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ peerId: peerId, gameType: 'gomoku' }),
+            });
+            const result = await response.json();
+            if (result.matched) {
+                onlineStatus.textContent = `匹配成功！正在连接: ${result.opponent_peer_id}`;
+                playerColor = 1; // The initiator of the match is black
+                joinRoom(result.opponent_peer_id);
+            } else {
+                // Not matched yet, start polling
+                playerColor = 2; // The one who waits is white
+                pollForMatch(peerId);
+            }
+        } catch (error) {
+            console.error('Matchmaking error:', error);
+            onlineStatus.textContent = '匹配出错，请重试。';
+        }
+    }
+
+    function pollForMatch(peerId) {
+       matchmakingPollInterval = setInterval(async () => {
+           try {
+               // This is a conceptual simplification.
+               // In the implemented backend, the first client to ask gets the match.
+               // The second client (the one polling) will never find a match this way.
+               // The logic is: one posts, and if a match is waiting, gets it immediately.
+               // If not, it posts itself and waits. The *next* client to post will find it.
+               // So, the poller is actually the one who will be connected *to*.
+               // The UI just needs to wait. The 'connection' event on the peer will fire.
+               onlineStatus.textContent = '等待对手连接...';
+           } catch (error) {
+               console.error('Polling error:', error);
+               clearInterval(matchmakingPollInterval);
+               matchmakingPollInterval = null;
+               onlineStatus.textContent = '匹配轮询出错。';
+           }
+        }, 5000);
+    }
+    
+    async function cancelMatchmaking(peerId) {
+        if (matchmakingPollInterval) {
+            clearInterval(matchmakingPollInterval);
+            matchmakingPollInterval = null;
+        }
+        matchmakingButton.textContent = '在线匹配';
+        onlineStatus.textContent = '匹配已取消。';
+        try {
+            await fetch('/match', {
+                method: 'DELETE',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ peerId: peerId }),
+            });
+        } catch (error) {
+            console.error('Error cancelling matchmaking:', error);
+        }
     }
 
     // --- Initial State ---

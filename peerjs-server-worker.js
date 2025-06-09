@@ -26,6 +26,8 @@
 // It is modified to run on Cloudflare Workers.
 // It is a single-file, no-dependency, and fully-functional PeerJS server.
 
+import { PeerServer } from "peer";
+
 const log = (...args) => console.log(...args);
 
 const WS_READY_STATE_OPEN = 1;
@@ -177,19 +179,137 @@ export class PeerJSServer {
     }
 }
 
-export default {
-    async fetch(request, env) {
-        // We will use a fixed name for our Durable Object instance.
-        // This ensures that all clients are routed to the same instance.
-        const durableObjectName = "signaling-server-instance";
-        
-        // Get the Durable Object's unique ID from its name.
-        const id = env.PEERJS_SERVER.idFromName(durableObjectName);
-        
-        // Get the stub for the Durable Object instance.
-        const stub = env.PEERJS_SERVER.get(id);
+// Helper to get a random element from an array
+const getRandomEl = (arr) => arr[Math.floor(Math.random() * arr.length)];
 
-        // Forward the request to the Durable Object.
-        return stub.fetch(request);
+// List of nouns and adjectives for generating random IDs
+const ADJECTIVES = ["happy", "silly", "lazy", "proud", "smart", "brave"];
+const NOUNS = ["panda", "dragon", "unicorn", "tiger", "eagle", "wizard"];
+
+// --- Matchmaking Queue Class ---
+class MatchmakingQueue {
+    constructor(db) {
+        this.db = db;
+    }
+
+    // Initialize the database table if it doesn't exist
+    async init() {
+        const query = `
+            CREATE TABLE IF NOT EXISTS matchmaking_queue (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                peer_id TEXT NOT NULL UNIQUE,
+                game_type TEXT NOT NULL,
+                status TEXT NOT NULL DEFAULT 'waiting',
+                opponent_peer_id TEXT,
+                created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+            );
+        `;
+        await this.db.prepare(query).run();
+    }
+
+    // Add a player to the queue or find a match for them
+    async findOrQueue(peerId, gameType) {
+        // Find a waiting player for the same game type
+        const findQuery = `
+            SELECT peer_id FROM matchmaking_queue
+            WHERE game_type = ? AND status = 'waiting'
+            ORDER BY created_at ASC
+            LIMIT 1;
+        `;
+        const waitingPlayer = await this.db.prepare(findQuery).bind(gameType).first();
+
+        if (waitingPlayer) {
+            // Found a match
+            const opponentPeerId = waitingPlayer.peer_id;
+            // Remove the matched player from the queue
+            const deleteQuery = "DELETE FROM matchmaking_queue WHERE peer_id = ?";
+            await this.db.prepare(deleteQuery).bind(opponentPeerId).run();
+            return { matched: true, opponent_peer_id: opponentPeerId };
+        } else {
+            // No match found, add this player to the queue
+            const insertQuery = "INSERT OR REPLACE INTO matchmaking_queue (peer_id, game_type) VALUES (?, ?)";
+            await this.db.prepare(insertQuery).bind(peerId, gameType).run();
+            return { matched: false };
+        }
+    }
+    
+    // Remove a player from the queue (e.g., if they cancel)
+    async removeFromQueue(peerId) {
+        const deleteQuery = "DELETE FROM matchmaking_queue WHERE peer_id = ?";
+        await this.db.prepare(deleteQuery).bind(peerId).run();
+    }
+
+     // Clean up stale entries (e.g., older than 5 minutes)
+     async cleanup() {
+        const cleanupQuery = "DELETE FROM matchmaking_queue WHERE created_at < datetime('now', '-5 minutes')";
+        await this.db.prepare(cleanupQuery).run();
+    }
+}
+
+// --- Main Worker Fetch Handler ---
+export default {
+    async fetch(request, env, ctx) {
+        const url = new URL(request.url);
+
+        // Initialize matchmaking queue helper
+        const queue = new MatchmakingQueue(env.DB);
+        ctx.waitUntil(queue.cleanup()); // Run cleanup in the background
+
+        // --- API Route for Matchmaking ---
+        if (url.pathname.startsWith("/match")) {
+            await queue.init(); // Ensure table exists
+
+            if (request.method === 'POST') {
+                try {
+                    const { peerId, gameType } = await request.json();
+                    if (!peerId || !gameType) {
+                        return new Response('Missing peerId or gameType', { status: 400 });
+                    }
+                    const result = await queue.findOrQueue(peerId, gameType);
+                    return new Response(JSON.stringify(result), {
+                        headers: { 'Content-Type': 'application/json' },
+                    });
+                } catch (e) {
+                    return new Response(`Error processing match request: ${e.message}`, { status: 500 });
+                }
+            }
+            
+            if (request.method === 'DELETE') {
+                 try {
+                    const { peerId } = await request.json();
+                    if (!peerId) {
+                        return new Response('Missing peerId', { status: 400 });
+                    }
+                    await queue.removeFromQueue(peerId);
+                    return new Response('Removed from queue', { status: 200 });
+                } catch (e) {
+                    return new Response(`Error processing cancellation: ${e.message}`, { status: 500 });
+                }
+            }
+
+            return new Response('Unsupported method for /match', { status: 405 });
+        }
+
+        // --- Existing PeerJS Server Logic ---
+        const peerServer = PeerServer({
+            generateClientId: () => `${getRandomEl(ADJECTIVES)}-${getRandomEl(NOUNS)}`,
+        }, async (peer) => {
+            // This part of the code is executed when a new peer connects
+            // console.log("Peer connected with id:", peer.getId());
+            
+            // You can add logic here when a peer connects, for example, logging.
+            
+            peer.on("disconnect", () => {
+                // console.log("Peer disconnected with id:", peer.getId());
+                // If a peer disconnects, we might want to remove them from the matchmaking queue.
+                ctx.waitUntil(queue.removeFromQueue(peer.getId()));
+            });
+
+            peer.on("error", (error) => {
+                // console.error("Peer error:", error);
+            });
+        });
+
+        return peerServer.fetch(request);
     }
 };
